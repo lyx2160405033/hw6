@@ -1,0 +1,159 @@
+作业6源代码：
+1在测试图像上产生高斯噪声lena图-需能指定均值和方差；并用多种滤波器恢复图像，分析各自优缺点；
+```
+f=imread('lena.bmp');
+figure(1);
+imshow(f);
+title('原图');
+f1=imnoise(f,'gaussian',0,0.01);
+figure(2);
+imshow(f1);
+f1=double(f1);
+title('加入高斯噪声u=0,s^2=0.01');
+w=fspecial('average',[3 3]);
+f2=imfilter(f1,w);
+f2=uint8(f2);
+figure(3);
+imshow(f2);
+title('算术均值3*3滤波结果');
+f3=medfilt2(f1,[3 3],'symmetric');
+f3=uint8(f3);
+figure(4);
+imshow(f3);
+title('中值滤波3*3结果');
+f4=exp(imfilter(log(f1),ones(3,3),'replicate')).^(1/3/3);
+f4=uint8(f4);
+figure(5)
+imshow(f4);
+title('几何均值3*3滤波结果');
+f5=3*3./imfilter(1./(f1+eps),ones(3,3),'replicate');
+f5=uint8(f5);
+figure(6)
+imshow(f5);
+title('调和均值3*3滤波结果');
+q=1.5;
+f6=imfilter(f1.^(q+1),ones(3,3),'replicate');
+f6=f6./(imfilter(f1.^q,ones(3,3),'replicate')+eps);
+f6=uint8(f6);
+figure(7)
+imshow(f6);
+title('逆调和均值q=1.5滤波结果');
+p=-1.5;
+f7=imfilter(f1.^(p+1),ones(3,3),'replicate');
+f7=f7./(imfilter(f1.^q,ones(3,3),'replicate')+eps);
+f7=uint8(f7);
+figure(8)
+imshow(f7);
+title('逆调和均值q=-1.5滤波结果');
+```
+2、在测试图像lena图加入椒盐噪声（椒和盐噪声密度均是0.1）；用学过的滤波器恢复图像；在使用反谐波分析Q大于0和小于0的作用；
+```
+f=imread('lena.bmp');
+figure(1);
+imshow(f);
+title('原图');
+f1=imnoise(f,'salt & pepper',0.1);
+figure(2);
+imshow(f1);
+f1=double(f1);
+title('加入椒盐噪声密度0.1');
+w=fspecial('average',[3 3]);
+f2=imfilter(f1,w);
+f2=uint8(f2);
+figure(3);
+imshow(f2);
+title('算术均值3*3滤波结果');
+f3=medfilt2(f1,[3 3],'symmetric');
+f3=uint8(f3);
+figure(4);
+imshow(f3);
+title('中值滤波3*3结果');
+f4=exp(imfilter(log(f1),ones(3,3),'replicate')).^(1/3/3);
+f4=uint8(f4);
+figure(5)
+imshow(f4);
+title('几何均值3*3滤波结果');
+f5=3*3./imfilter(1./(f1+eps),ones(3,3),'replicate');
+f5=uint8(f5);
+figure(6)
+imshow(f5);
+title('调和均值3*3滤波结果');
+q=1.5;
+f6=imfilter(f1.^(q+1),ones(3,3),'replicate');
+f6=f6./(imfilter(f1.^q,ones(3,3),'replicate')+eps);
+f6=uint8(f6);
+figure(7)
+imshow(f6);
+title('逆调和均值q=1.5滤波结果');
+p=-2;
+f7=imfilter(f1.^(p+1),ones(3,3),'replicate');
+f7=f7./(imfilter(f1.^q,ones(3,3),'replicate')+eps);
+f7=uint8(f7);
+figure(8)
+imshow(f7);
+title('逆调和均值q=-1.5滤波结果');
+```
+3、推导维纳滤波器并实现下边要求；
+(a) 实现模糊滤波器如方程Eq. (5.6-11).
+(b) 模糊lena图像：45度方向，T=1；
+(c) 再模糊的lena图像中增加高斯噪声，均值= 0 ，方差=10 pixels 以产生模糊图像；
+(d)分别利用方程 Eq. (5.8-6)和(5.9-4)，恢复图像；并分析算法的优缺点.
+```
+f=imread('lena.bmp');
+figure(1);
+imshow(f);
+title('原图');
+f=double(f);
+F=fft2(f);
+[M,N]=size(F);
+F=fftshift(F);
+a=0.1;b=0.1;T=1;
+for u=1:M
+    for v=1:N
+        H(u,v)=(T/(pi*(u*a+v*b)))*sin(pi*(u*a+v*b))*exp(-sqrt(-1)*pi*(u*a+v*b));
+        G(u,v)=H(u,v)*F(u,v);
+    end
+end
+G=ifftshift(G);
+g=ifft2(G);
+g=256.*g./max(max(g));
+g=uint8(real(g));
+figure(2);
+imshow(g);
+title('运动化模糊后图像');
+g1=imnoise(g,'gaussian',0,0.01);
+figure(3);
+imshow(g1);
+title('添加高斯噪声，均值0，方差10pixel');
+G1=fft2(g1);
+G1=fftshift(G1);
+K=0.03;
+for u=1:M
+    for v=1:N
+        F1(u,v)=(1/H(u,v)*(abs(H(u,v)))^2/((abs(H(u,v)))^2+K))*G1(u,v);
+    end
+end
+F1=ifftshift(F1);
+f1=ifft2(F1);
+f1=256.*f./max(max(f));
+f1=uint8(real(f1));
+figure(4);
+imshow(f1);
+title('维纳滤波结果');
+p=[0 -1 0;-1 4 -1;0 -1 0];
+P=psf2otf(p,[M,N]);
+gamma=0.001;
+numerator=conj(H);
+for u=1:M
+    for v=1:N
+        F2(u,v)=(numerator(u,v)*G1(u,v)/(H(u,v))^2+gamma*(P(u,v)^2));
+    end
+end
+F2=ifftshift(F2);
+f2=ifft2(F2);
+f2=256.*f./max(max(f));
+f2=uint8(real(f2));
+figure(5);
+imshow(f2);
+title('约束最小二乘法滤波结果');
+```
